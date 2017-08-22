@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * gulp tool for web front
+ * gulp tool for web frontend
  */
 const VER = "0.0.1";
 
