@@ -3,7 +3,7 @@
 NODE_BIN=node
 CUR_PTH=`pwd`
 
-echo '::::CURRENT PATH:'$CUR_PTH
+# echo '::::CURRENT PATH:'$CUR_PTH
 
 #####GET BIN DIR######################
 bin_dir=`dirname $0`

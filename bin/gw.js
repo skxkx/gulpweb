@@ -26,10 +26,6 @@ let SEP = pth.sep,
 let Env = require('../lib/env.js'),
     ARGS = require('../lib/arguments.js');
 
-//参数解析
-function _parse_args() {
-    return ARGS.parseArgs(process.argv);
-}
 
 function _export_vars() {
     global.APP_RD = RD;
@@ -58,6 +54,7 @@ function _parse_support_acts(args) {
         flists = fs.readdirSync(lib_pth),
         fstat = null,
         bnm = '',
+        actn = '',
         ret = { cur: null, all: {} };
 
     for (let fnm of flists) {
@@ -65,9 +62,12 @@ function _parse_support_acts(args) {
         if (bnm != fnm && bnm.length > 4 && bnm.substr(0, 4) == 'act_') {
             fstat = fs.lstatSync(lib_pth + fnm);
             if (fstat.isFile()) {
-                if (!ret.cur && args[bnm.substr(4)]) {
+                actn = bnm.substr(4);
+                if (!ret.cur && args[actn]) {
                     ret.cur = require(lib_pth + fnm);
                     ret.cur.__nm = bnm.substr(4);
+                } else if (!ret.cur) {
+
                 }
                 ret.all[bnm.substr(4)] = lib_pth + fnm;
             }
@@ -81,16 +81,18 @@ function _is_proj() {
 
 }
 
-function index() {
+function _run_args(args) {
+    let { cur, all } = _parse_support_acts(args);
 
+    run_act(cur || (args.version ? 'version' : ''), args, all);
+}
+
+function index() {
     console.log('::CURRENT_DIR:%s'.red.bold, CUR_PTH);
 
     _export_vars();
 
-    let args = _parse_args(),
-        { cur, all } = _parse_support_acts(args);
-
-    run_act(cur || (args.version ? 'version' : ''), args, all);
+    _run_args(ARGS.parseArgs(process.argv));
 }
 
 
@@ -118,5 +120,9 @@ function run_act(act, args, allmods) {
 if (require.main == module) {
     index();
 } else {
-    exports.init = index;
+    exports.init = function(args) {
+        console.log('::::CURRENT_DIR:%s'.red.bold, CUR_PTH);
+        _export_vars();
+        _run_args(args);
+    }
 }
