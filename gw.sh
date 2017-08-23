@@ -10,4 +10,4 @@ bin_dir=`dirname $0`
 APP_ROOT=`cd $bin_dir && pwd`
 ######################################
 
-$NODE_BIN ${APP_ROOT}/bin/gw.js $CUR_PTH
+$NODE_BIN ${APP_ROOT}/bin/gw.js ${@}

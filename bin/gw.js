@@ -1,7 +1,10 @@
 #!/usr/bin/env node
+
 /**
  * gulp tool for web frontend
  */
+
+require('colors');
 
 const VER = "0.0.1";
 
@@ -10,8 +13,7 @@ var pth = require('path'),
     OS = require('os');
 
 
-
-    //路径分隔符
+//路径分隔符
 let SEP = pth.sep,
     //执行代码时所在的路径
     CUR_PTH = (process.cwd() || process.env['PWD']) + SEP,
@@ -39,36 +41,71 @@ function _export_vars() {
  * gulp 模块验证
  */
 function _valid_gulp() {
-    
+
 }
 
 function _load_cnf() {
 
 }
 
-function _parse_act(args) {
-    let ret = { act: 'help', 'args': args };
-    
+/**
+ * 解析支持的行为
+ * 
+ * @returns
+ */
+function _parse_support_acts(args) {
+    let lib_pth = APP_RD + 'lib' + SEP,
+        flists = fs.readdirSync(lib_pth),
+        fstat = null,
+        bnm = '',
+        ret = { cur: null, all: {} };
+
+    for (let fnm of flists) {
+        bnm = pth.basename(fnm, '.js');
+        if (bnm != fnm && bnm.length > 4 && bnm.substr(0, 4) == 'act_') {
+            fstat = fs.lstatSync(lib_pth + fnm);
+            if (fstat.isFile()) {
+                if (!ret.cur && args[bnm.substr(4)]) {
+                    ret.cur = require(lib_pth + fnm);
+                    ret.cur.__nm = bnm.substr(4);
+                }
+                ret.all[bnm.substr(4)] = lib_pth + fnm;
+            }
+        }
+    }
+
     return ret;
 }
 
+function _is_proj() {
+
+}
+
 function index() {
-    console.log('CURRENT_DIR:', CUR_PTH);
+
+    console.log('::CURRENT_DIR:%s'.red.bold, CUR_PTH);
+
     _export_vars();
 
-    let args = _parse_args();
-    let {act,arg}=_parse_act(args);
+    let args = _parse_args(),
+        { cur, all } = _parse_support_acts(args);
 
-    run_act(act,arg);
+    run_act(cur || (args.version ? 'version' : ''), args, all);
 }
 
 
-function run_act(act, args) {
-    console.log('act:', act);
+function run_act(act, args, allmods) {
+    (!act) && (act = 'help');
+
     try {
-        let actmod = require(RD + 'lib' + SEP + 'act_' + act + '.js');
-        if (actmod && actmod.run) {
-            actmod.run();
+
+        if (typeof act == 'string') {
+            act = require(RD + 'lib' + SEP + 'act_' + (act == 'version' ? 'help' : act) + '.js');
+            act.__nm = act;
+        }
+
+        if (act && act.run) {
+            act.run(args, allmods);
         } else {
             console.error('###Action###' + act + ' not supported!');
             process.abort();
