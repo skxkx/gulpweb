@@ -12,26 +12,8 @@ var pth = require('path'),
     fs = require('fs'),
     OS = require('os');
 
-
-//路径分隔符
-let SEP = pth.sep,
-    //执行代码时所在的路径
-    CUR_PTH = (process.cwd() || process.env['PWD']) + SEP,
-    //应用工具根目录
-    RD = pth.dirname(__dirname) + SEP,
-    //用户目录
-    USER_HOME = OS.homedir();
-
-
 let Env = require('../lib/env.js'),
     ARGS = require('../lib/arguments.js');
-
-
-function _export_vars() {
-    global.APP_RD = RD;
-    global.SEP = SEP;
-    global.CUR_PTH = CUR_PTH;
-}
 
 /**
  * gulp 模块验证
@@ -50,8 +32,7 @@ function _load_cnf() {
  * @returns
  */
 function _parse_support_acts(args) {
-    let lib_pth = APP_RD + 'lib' + SEP,
-        flists = fs.readdirSync(lib_pth),
+    let flists = fs.readdirSync(ACT_DIR),
         fstat = null,
         bnm = '',
         actn = '',
@@ -60,16 +41,16 @@ function _parse_support_acts(args) {
     for (let fnm of flists) {
         bnm = pth.basename(fnm, '.js');
         if (bnm != fnm && bnm.length > 4 && bnm.substr(0, 4) == 'act_') {
-            fstat = fs.lstatSync(lib_pth + fnm);
+            fstat = fs.lstatSync(ACT_DIR + fnm);
             if (fstat.isFile()) {
                 actn = bnm.substr(4);
                 if (!ret.cur && args[actn]) {
-                    ret.cur = require(lib_pth + fnm);
+                    ret.cur = require(ACT_DIR + fnm);
                     ret.cur.__nm = bnm.substr(4);
                 } else if (!ret.cur) {
 
                 }
-                ret.all[bnm.substr(4)] = lib_pth + fnm;
+                ret.all[bnm.substr(4)] = ACT_DIR + fnm;
             }
         }
     }
@@ -88,11 +69,19 @@ function _run_args(args) {
 }
 
 function index() {
-    console.log('::CURRENT_DIR:%s'.red.bold, CUR_PTH);
 
-    _export_vars();
+    let args = ARGS.parseArgs(process.argv),
+        i = args.length - 1;
+    while (i >= 0) {
+        // console.log('act valid:', args[i]);
+        if (/^[a-z_]+$/gi.test(args[i]) && fs.existsSync(ACT_DIR + 'act_' + args[i] + '.js')) {
+            args[args[i]] = true;
+            args.splice(i, 1);
+        }
+        i--;
+    }
 
-    _run_args(ARGS.parseArgs(process.argv));
+    _run_args(args);
 }
 
 
@@ -102,18 +91,19 @@ function run_act(act, args, allmods) {
     try {
 
         if (typeof act == 'string') {
-            act = require(RD + 'lib' + SEP + 'act_' + (act == 'version' ? 'help' : act) + '.js');
+            act = require(ACT_DIR + 'act_' + (act == 'version' ? 'help' : act) + '.js');
             act.__nm = act;
         }
 
         if (act && act.run) {
             act.run(args, allmods);
+            return;
         } else {
             console.error('###Action###' + act + ' not supported!');
             process.abort();
         }
     } catch (e) {
-        console.error('Error!');
+        console.error('Error!', e);
     }
 }
 
@@ -122,7 +112,6 @@ if (require.main == module) {
 } else {
     exports.init = function(args) {
         console.log('::::CURRENT_DIR:%s'.red.bold, CUR_PTH);
-        _export_vars();
         _run_args(args);
     }
 }
