@@ -4,15 +4,20 @@
  * gulp tool for web frontend
  */
 
-require('colors');
-
+let NO_COLOR = false;
+try {
+    require('colors');
+} catch (e) {
+    NO_COLOR = true;
+    // console.log('--->');
+}
 const VER = "0.0.1";
 
 var pth = require('path'),
     fs = require('fs'),
     OS = require('os');
 
-let Env = require('../lib/env.js'),
+var Env = require('../lib/env.js'),
     ARGS = require('../lib/arguments.js');
 
 /**
@@ -32,13 +37,16 @@ function _load_cnf() {
  * @returns
  */
 function _parse_support_acts(args) {
-    let flists = fs.readdirSync(ACT_DIR),
+    var flists = fs.readdirSync(ACT_DIR),
         fstat = null,
         bnm = '',
         actn = '',
         ret = { cur: null, all: {} };
 
-    for (let fnm of flists) {
+    // for (let fnm of flists) {
+    var fnm;
+    for (var k in flists) {
+        fnm = flists[k];
         bnm = pth.basename(fnm, '.js');
         if (bnm != fnm && bnm.length > 4 && bnm.substr(0, 4) == 'act_') {
             fstat = fs.lstatSync(ACT_DIR + fnm);
@@ -63,14 +71,16 @@ function _is_proj() {
 }
 
 function _run_args(args) {
-    let { cur, all } = _parse_support_acts(args);
+    // let { cur, all } = _parse_support_acts(args);
+    var obj = _parse_support_acts(args),
+        cur = obj.cur,
+        all = obj.all;
 
     run_act(cur || (args.version ? 'version' : ''), args, all);
 }
 
 function index() {
-
-    let args = ARGS.parseArgs(process.argv),
+    var args = ARGS.parseArgs(process.argv),
         i = args.length - 1;
     while (i >= 0) {
         // console.log('act valid:', args[i]);
@@ -111,7 +121,11 @@ if (require.main == module) {
     index();
 } else {
     exports.init = function(args) {
-        console.log('::::CURRENT_DIR:%s'.red.bold, CUR_PTH);
+        if (NO_COLOR) {
+            console.log('::::CURRENT_DIR:%s', CUR_PTH);
+        } else {
+            console.log('::::CURRENT_DIR:%s'.red.bold, CUR_PTH);
+        }
         _run_args(args);
     }
 }
